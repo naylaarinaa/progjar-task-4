@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-class HttpServer:
+class HTTPServer:
     def __init__(self, logger=None):
         self.mime_types = {
             ".pdf": "application/pdf",
@@ -12,7 +12,7 @@ class HttpServer:
             ".html": "text/html"
         }
         self.logger = logger
-        self.root_dir = "server/"
+        self.root_dir = "./"
         if not os.path.exists(self.root_dir):
             os.makedirs(self.root_dir)
 
@@ -22,7 +22,7 @@ class HttpServer:
             f"HTTP/1.0 {code} {msg}\r\n",
             f"Date: {now}\r\n",
             "Connection: close\r\n",
-            "Server: simple-server/1.0\r\n",
+            "Server: server/1.0\r\n",
             f"Content-Length: {len(body)}\r\n"
         ]
         for k, v in headers.items():
@@ -47,8 +47,7 @@ class HttpServer:
         try:
             method = parts[0].upper().strip()
             if method == "GET":
-                path = parts[1].strip()
-                return self.do_get(path, headers)
+                return self.list_dir("", headers)
             elif method == "POST":
                 path = parts[1].strip()
                 if path.startswith("/upload"):
@@ -61,23 +60,6 @@ class HttpServer:
                 return self.build_response(400, "Bad Request", "", {})
         except Exception:
             return self.build_response(400, "Bad Request", "", {})
-
-    def do_get(self, path, headers):
-        rel_path = path[1:]
-        abs_path = os.path.abspath(os.path.join(self.root_dir, rel_path))
-        if path == "/" or path == "/server/" or path == "/server":
-            return self.list_dir("", headers)
-        elif os.path.isfile(abs_path):
-            try:
-                with open(abs_path, "rb") as f:
-                    content = f.read()
-                ext = os.path.splitext(abs_path)[1]
-                ctype = self.mime_types.get(ext, "application/octet-stream")
-                return self.build_response(200, "OK", content, {"Content-type": ctype})
-            except Exception as err:
-                return self.build_response(500, "Internal Server Error", str(err), {})
-        else:
-            return self.build_response(404, "Not Found", f"{rel_path} not found.", {"Content-type": "text/plain"})
 
     def list_dir(self, rel_path, headers):
         dir_path = os.path.abspath(self.root_dir)
@@ -95,12 +77,16 @@ class HttpServer:
             fname = path.lstrip("/")
         if not fname:
             return self.build_response(400, "Bad Request", "No filename", {"Content-type": "text/plain"})
-        safe_name = os.path.basename(fname)
+        safe_name = os.path.basename(fname).lower()  # rename jadi lowercase
         fpath = os.path.join(self.root_dir, safe_name)
         try:
             with open(fpath, "wb+") as f:
                 f.write(body)
-            return self.build_response(201, "Created", f"File {safe_name} uploaded ({len(body)} bytes)", {"Content-type": "text/plain"})
+            return self.build_response(
+                201, "Created",
+                f"File {fname} diupload dan di-rename jadi {safe_name} ({len(body)} bytes)",
+                {"Content-type": "text/plain"}
+            )
         except Exception as err:
             return self.build_response(500, "Internal Server Error", f"Upload error: {err}", {"Content-type": "text/plain"})
 

@@ -88,12 +88,14 @@ if __name__ == "__main__":
         pilihan = input("Pilih menu [1-4]: ").strip()
         if pilihan == "1":
             print("\nDAFTAR FILE DI SERVER:")
-            url = f"{base_url}/server/"
+            url = f"{base_url}"
             result = client.get(url)
             print(result)
         elif pilihan == "2":
-            fname = input("Nama file yang ingin di-upload: ").strip()
-            url = f"{base_url}/upload/{fname}"
+            fname = input("Nama file yang ingin di-upload (lokal): ").strip()
+            target_name = input("Nama file di server (rename jadi): ").strip()
+            url = f"{base_url}/upload/{target_name}"
+            print(f"File lokal: {fname} akan diupload ke server sebagai: {target_name}")
             result = client.upload(url, fname)
             print(result)
         elif pilihan == "3":

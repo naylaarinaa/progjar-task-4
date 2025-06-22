@@ -1,66 +1,73 @@
-from socket import *
 import socket
-from concurrent.futures import ProcessPoolExecutor
-from http import HttpServer
 import logging
-
-http_server = HttpServer(logging)
+import time
+from concurrent.futures import ProcessPoolExecutor
+from http import HTTPServer  # Pastikan HTTPServer menerima logger
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+http_server = HTTPServer(logger=logging)
 
 def handle_client(conn, addr):
+    start_time = time.time()
+    logging.info(f"[PROCESS] Connection from {addr} accepted")
     try:
+        # Baca header sampai delimiter
         header_bytes = b""
-        while True:
+        while not header_bytes.endswith(b"\r\n\r\n"):
             chunk = conn.recv(1)
             if not chunk:
-                conn.close()
-                return
+                raise ConnectionError("Client closed connection early")
             header_bytes += chunk
-            if header_bytes.endswith(b"\r\n\r\n"):
-                break
+
         header_str = header_bytes.decode("utf-8")
-        lines = header_str.strip().split("\r\n")
+        request_line = header_str.split("\r\n",1)[0]
+        method, path, _ = request_line.split(" ", 2)
+        logging.info(f"[PROCESS] Received request: {method} {path}")
+
+        # Parse Content-Length
         content_len = 0
-        for line in lines:
+        for line in header_str.strip().split("\r\n"):
             if line.lower().startswith("content-length:"):
-                content_len = int(line.split(":", 1)[1].strip())
+                content_len = int(line.split(":",1)[1].strip())
                 break
+
+        # Baca body sesuai Content-Length
         body_bytes = b""
-        if content_len > 0:
-            while len(body_bytes) < content_len:
-                left = content_len - len(body_bytes)
-                part = conn.recv(min(4096, left))
-                if not part:
-                    break
-                body_bytes += part
+        while len(body_bytes) < content_len:
+            part = conn.recv(min(4096, content_len - len(body_bytes)))
+            if not part:
+                break
+            body_bytes += part
+
+        # Proses request
         full_req = header_bytes + body_bytes
         resp = http_server.handle(full_req)
         if resp:
-            resp += b"\r\n\r\n"
-            conn.sendall(resp)
-        conn.close()
+            conn.sendall(resp + b"\r\n\r\n")
+            logging.info(f"[PROCESS] Sent {len(resp)} bytes response to {addr}")
+
     except Exception as err:
-        logging.error(f"Client error {addr}: {err}")
+        logging.error(f"[PROCESS] Error handling {addr}: {err}")
+    finally:
         conn.close()
+        elapsed = time.time() - start_time
+        logging.info(f"[PROCESS] Closed connection {addr} (handled in {elapsed:.3f}s)")
 
 def run_server():
-    clients = []
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     port = 8081
     sock.bind(("0.0.0.0", port))
-    sock.listen(1)
-    logging.basicConfig(level=logging.INFO)
-    print(f"Process Pool HTTP Server listening on port {port}")
+    sock.listen()
+    logging.info(f"Process Pool HTTP Server listening on port {port}")
+
     with ProcessPoolExecutor(20) as pool:
         while True:
             conn, addr = sock.accept()
-            fut = pool.submit(handle_client, conn, addr)
-            clients.append(fut)
-            active = [f for f in clients if f.running()]
-            print(f"Active processes: {len(active)}")
-
-def main():
-    run_server()
+            pool.submit(handle_client, conn, addr)
 
 if __name__ == "__main__":
-    main()
+    run_server()
