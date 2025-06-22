@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-class SimpleHTTPClient:
+class HTTPClient:
     def __init__(self):
         pass
 
@@ -62,7 +62,7 @@ class SimpleHTTPClient:
 
 def print_menu():
     print("="*40)
-    print("         SIMPLE HTTP CLIENT         ")
+    print("         HTTP CLIENT         ")
     print("="*40)
     print("1. Lihat daftar file di direktori")
     print("2. Upload file")
@@ -72,7 +72,7 @@ def print_menu():
 
 if __name__ == "__main__":
     print("="*40)
-    print("         SIMPLE HTTP CLIENT         ")
+    print("         HTTP CLIENT         ")
     print("="*40)
     print("Pilih mode server:")
     print("1. Thread Pool (8080)")
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         base_url = "http://127.0.0.1:8081"
     else:
         base_url = "http://127.0.0.1:8080"
-    client = SimpleHTTPClient()
+    client = HTTPClient()
     while True:
         print_menu()
         pilihan = input("Pilih menu [1-4]: ").strip()
