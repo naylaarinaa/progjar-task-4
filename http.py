@@ -1,6 +1,4 @@
 import os
-import urllib.parse
-from glob import glob
 from datetime import datetime
 
 class SimpleHTTPServer:
@@ -80,10 +78,6 @@ class SimpleHTTPServer:
                 return self.build_response(500, "Internal Server Error", str(err), {})
         else:
             return self.build_response(404, "Not Found", f"{rel_path} not found.", {"Content-type": "text/plain"})
-
-    def do_post(self, path, headers, body):
-        msg = f"POST to {path}\nBody size: {len(body)} bytes\nContent:\n{body}"
-        return self.build_response(200, "OK", msg, {"Content-type": "text/plain"})
 
     def list_dir(self, rel_path, headers):
         dir_path = os.path.abspath(self.root_dir)
