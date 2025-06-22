@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-class SimpleHTTPServer:
+class HttpServer:
     def __init__(self, logger=None):
         self.mime_types = {
             ".pdf": "application/pdf",

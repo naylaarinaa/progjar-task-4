@@ -1,10 +1,10 @@
 from socket import *
 import socket
 from concurrent.futures import ThreadPoolExecutor
-from http import SimpleHTTPServer
+from http import HttpServer
 import logging
 
-http_server = SimpleHTTPServer(logging)
+http_server = HttpServer(logging)
 
 def handle_client(conn, addr):
     try:
